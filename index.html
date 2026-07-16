@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="作品图床">
+<meta name="theme-color" content="#FAF4EF">
+<title>作品图床 · 图片转永久链接</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#FAF4EF;
+    --surface:#FFFFFF;
+    --ink:#241C1A;
+    --muted:#9B8B84;
+    --line:#EFE4DC;
+    --lacquer:#C5344F;
+    --lacquer-deep:#A32741;
+    --blush:#F7E7E6;
+    --gold:#B08A54;
+    --ok:#3F7D5B;
+    --err:#C5344F;
+    --serif:"Cormorant Garamond","Noto Serif SC","Songti SC","SimSun",serif;
+    --sans:"Manrope","PingFang SC","Microsoft YaHei","Hiragino Sans GB",sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;font-family:var(--sans);color:var(--ink);line-height:1.6;
+    background:
+      radial-gradient(120% 60% at 100% 0%, rgba(247,231,230,.7), transparent 60%),
+      var(--canvas);
+    background-attachment:fixed;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  @media (prefers-reduced-motion:no-preference){
+    .card{animation:rise .5s cubic-bezier(.2,.7,.2,1) backwards;}
+    .card:nth-child(2){animation-delay:.05s;}
+    .card:nth-child(3){animation-delay:.1s;}
+    @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:26px 18px 60px;}
+  .head{display:flex;align-items:center;gap:13px;margin-bottom:20px;}
+  .logo{
+    width:46px;height:46px;border-radius:50%;flex-shrink:0;
+    background:radial-gradient(circle at 32% 26%, #ff8497, var(--lacquer) 46%, var(--lacquer-deep));
+    box-shadow:0 10px 20px -7px rgba(197,52,79,.55), inset 0 2px 5px rgba(255,255,255,.45);
+  }
+  .eyebrow{font-size:11px;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--lacquer);margin:0 0 2px;}
+  h1{font-family:var(--serif);font-size:34px;line-height:1.05;margin:0;font-weight:700;letter-spacing:.5px;}
+  .sub{color:var(--muted);font-size:13.5px;margin:14px 0 22px;}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:18px;margin-bottom:16px;
+    box-shadow:0 14px 34px -22px rgba(60,40,35,.4);
+  }
+  .card h2{
+    font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:.3px;
+    margin:0 0 14px;color:var(--ink);display:flex;align-items:center;gap:9px;
+  }
+  .card h2::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--lacquer);box-shadow:0 0 0 3px var(--blush);flex-shrink:0;}
+  label{display:block;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--muted);margin:10px 0 5px;}
+  input[type=text],input[type=password]{
+    width:100%;background:#FDFAF7;border:1px solid var(--line);color:var(--ink);
+    padding:12px 13px;border-radius:12px;font-size:16px;font-family:var(--sans);outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus{border-color:var(--lacquer);box-shadow:0 0 0 3px rgba(197,52,79,.14);background:#fff;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row>div{flex:1;min-width:140px;}
+  .hint{font-size:12px;color:var(--muted);margin-top:7px;}
+  .hint a{color:var(--lacquer);text-underline-offset:2px;}
+  button{
+    font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;
+    padding:13px 20px;border-radius:13px;min-height:48px;border:none;color:#fff;
+    background:linear-gradient(180deg,#d64a63,var(--lacquer) 55%,var(--lacquer-deep));
+    box-shadow:0 10px 22px -10px rgba(197,52,79,.7), inset 0 1px 0 rgba(255,255,255,.28);
+    transition:transform .12s, box-shadow .12s, filter .12s;
+  }
+  button:active{transform:translateY(1px);filter:brightness(.97);}
+  button.ghost{
+    background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:600;
+  }
+  button.ghost:active{background:#FBF5F2;}
+  button:disabled{opacity:.5;}
+  .btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .btn-row button{flex:1;}
+  .pick-row{display:flex;gap:12px;}
+  .pick-row .drop{flex:1;}
+  .drop{
+    border:1.5px dashed #E6CDC6;border-radius:16px;
+    padding:26px 14px;text-align:center;color:var(--muted);
+    cursor:pointer;transition:.18s;background:#FDFAF7;
+  }
+  .drop:active,.drop.hover{
+    border-color:var(--lacquer);color:var(--ink);
+    background:linear-gradient(180deg,#fff,#FDF1EF);
+    box-shadow:0 14px 30px -16px rgba(197,52,79,.5);
+  }
+  .drop .big{font-size:28px;display:block;margin-bottom:7px;}
+  .drop strong{display:block;font-size:15px;margin-bottom:2px;font-weight:700;color:var(--ink);}
+  .drop small{font-size:12px;}
+  .status{margin-top:13px;font-size:14px;min-height:20px;word-break:break-word;}
+  .status.ok{color:var(--ok);}
+  .status.err{color:var(--err);}
+  .result-item{margin-bottom:14px;}
+  .result-item .lname{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .copybox{display:flex;gap:8px;}
+  .copybox input{font-family:ui-monospace,"SF Mono",monospace;font-size:12.5px;}
+  .copybox button{min-width:64px;padding:0 12px;min-height:44px;}
+  .thumb{max-width:100%;max-height:240px;border-radius:14px;margin:12px 0;border:1px solid var(--line);box-shadow:0 16px 34px -20px rgba(60,40,35,.5);}
+  .history-item{
+    display:flex;align-items:center;gap:11px;padding:9px;border-radius:14px;
+    background:#FDFAF7;border:1px solid var(--line);margin-bottom:9px;font-size:13px;
+  }
+  .history-item img{width:48px;height:48px;object-fit:cover;border-radius:11px;flex-shrink:0;}
+  .history-item .h-link{flex:1;font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);}
+  details summary{cursor:pointer;color:var(--lacquer);font-size:14px;font-weight:600;padding:4px 0;}
+  code{background:var(--blush);color:var(--lacquer-deep);padding:1px 7px;border-radius:6px;font-size:13px;}
+  .saved-badge{font-size:11px;font-weight:600;color:var(--ok);margin-left:8px;letter-spacing:.02em;}
+  .empty{color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo"></div>
+    <div>
+      <p class="eyebrow">MEIJIA · 作品图床</p>
+      <h1>作品图床</h1>
+    </div>
+  </div>
+  <p class="sub">把每张作品照片存进你自己的 GitHub，生成永久有效的直链——完全免费，链接不失效。</p>
+
+  <!-- 上传（放最上面，手机上优先看到） -->
+  <div class="card">
+    <h2>上传作品</h2>
+    <div class="pick-row">
+      <div class="drop" id="drop">
+        <span class="big">🖼️</span>
+        <strong>从相册选择</strong>
+        <small>也可把图拖进来 / 粘贴</small>
+      </div>
+      <div class="drop" id="camera">
+        <span class="big">📷</span>
+        <strong>拍照上传</strong>
+        <small>直接调用相机</small>
+      </div>
+    </div>
+    <input type="file" id="file" accept="image/*" style="display:none" multiple>
+    <input type="file" id="camfile" accept="image/*" capture="environment" style="display:none">
+    <div class="status" id="upStatus"></div>
+    <div class="result" id="result"></div>
+  </div>
+
+  <!-- 配置 -->
+  <div class="card">
+    <h2>连接设置 <span id="savedBadge" class="saved-badge" style="display:none">已保存</span></h2>
+    <div class="row">
+      <div>
+        <label>GitHub 用户名</label>
+        <input type="text" id="owner" placeholder="例如 Luffiy-NA" autocomplete="off" autocapitalize="off">
+      </div>
+      <div>
+        <label>仓库名</label>
+        <input type="text" id="repo" placeholder="例如 MEIJIA" autocomplete="off" autocapitalize="off">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>分支名</label>
+        <input type="text" id="branch" placeholder="main" autocomplete="off" autocapitalize="off">
+      </div>
+      <div>
+        <label>访问令牌 Token</label>
+        <input type="password" id="token" placeholder="ghp_xxxxxxxx" autocomplete="off">
+      </div>
+    </div>
+    <div class="hint">令牌只保存在你自己的手机里，不会发给任何第三方。不清楚怎么填？看底部「首次配置」。</div>
+    <div class="btn-row">
+      <button id="saveCfg">保存设置</button>
+      <button class="ghost" id="testCfg">测试连接</button>
+    </div>
+    <div class="status" id="cfgStatus"></div>
+  </div>
+
+  <!-- 历史 -->
+  <div class="card">
+    <h2>最近上传</h2>
+    <div id="history"><div class="empty">还没有上传过作品。</div></div>
+  </div>
+
+  <!-- 教程 -->
+  <div class="card">
+    <details>
+      <summary>首次配置指引（3 步，约 3 分钟）</summary>
+      <div style="margin-top:14px; font-size:14px;">
+        <p><strong>第 1 步：注册 GitHub 账号</strong><br>
+        打开 <a href="https://github.com/signup" target="_blank">github.com/signup</a> 注册免费账号，记住<strong>用户名</strong>填到上面。</p>
+        <p><strong>第 2 步：新建仓库放作品</strong><br>
+        打开 <a href="https://github.com/new" target="_blank">github.com/new</a>：<br>
+        · 名字填如 <code>MEIJIA</code><br>
+        · 选 <strong>Public 公开</strong><br>
+        · 勾 <strong>Add a README file</strong><br>
+        · Create repository。分支名一般是 <code>main</code>。</p>
+        <p><strong>第 3 步：生成访问令牌</strong><br>
+        打开 <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a>：<br>
+        · Expiration 选 <strong>No expiration</strong><br>
+        · 勾 <strong>repo</strong> 整项<br>
+        · Generate token，复制 <code>ghp_...</code> 填到上面。</p>
+        <p>填完点「保存设置」→「测试连接」成功即可开始用。</p>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const CFG_KEY = 'tuchuang_cfg';
+const HIST_KEY = 'tuchuang_hist';
+
+function loadCfg() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
+    $('owner').value = c.owner || '';
+    $('repo').value = c.repo || '';
+    $('branch').value = c.branch || 'main';
+    $('token').value = c.token || '';
+    if (c.owner && c.repo && c.token) $('savedBadge').style.display = 'inline';
+  } catch(e) {}
+}
+function getCfg() {
+  return {
+    owner: $('owner').value.trim(),
+    repo: $('repo').value.trim(),
+    branch: ($('branch').value.trim() || 'main'),
+    token: $('token').value.trim(),
+  };
+}
+function saveCfg() {
+  const c = getCfg();
+  if (!c.owner || !c.repo || !c.token) {
+    setStatus('cfgStatus', '请把用户名、仓库名、令牌都填上。', 'err');
+    return false;
+  }
+  localStorage.setItem(CFG_KEY, JSON.stringify(c));
+  $('savedBadge').style.display = 'inline';
+  setStatus('cfgStatus', '设置已保存到本机。', 'ok');
+  return true;
+}
+function setStatus(id, msg, cls) {
+  const el = $(id);
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' ' + cls : '');
+}
+$('saveCfg').onclick = saveCfg;
+
+$('testCfg').onclick = async () => {
+  const c = getCfg();
+  if (!c.owner || !c.repo || !c.token) { setStatus('cfgStatus', '请先填完设置。', 'err'); return; }
+  setStatus('cfgStatus', '正在连接…', '');
+  try {
+    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}`, {
+      headers: { 'Authorization': 'Bearer ' + c.token, 'Accept': 'application/vnd.github+json' }
+    });
+    if (r.ok) {
+      const d = await r.json();
+      setStatus('cfgStatus', `连接成功 · 仓库 ${d.full_name}（${d.private ? '私有 — 建议改公开，否则图片打不开' : '公开'}）。`, d.private ? 'err' : 'ok');
+    } else if (r.status === 401) {
+      setStatus('cfgStatus', '令牌无效或已过期，请重新生成 Token。', 'err');
+    } else if (r.status === 404) {
+      setStatus('cfgStatus', '找不到仓库，请检查用户名和仓库名。', 'err');
+    } else {
+      setStatus('cfgStatus', '连接失败：HTTP ' + r.status, 'err');
+    }
+  } catch(e) {
+    setStatus('cfgStatus', '网络错误：' + e.message, 'err');
+  }
+};
+
+let uploadCounter = 0;
+function makePath(fileName) {
+  const ext = (fileName.match(/\.[a-zA-Z0-9]+$/) || ['.png'])[0].toLowerCase();
+  const base = fileName.replace(/\.[a-zA-Z0-9]+$/, '')
+                       .replace(/[^a-zA-Z0-9一-龥-]/g, '_')
+                       .slice(0, 40) || 'img';
+  const d = new Date();
+  const stamp = d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + '-' +
+                pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+  const rand = Math.random().toString(36).slice(2, 7);
+  uploadCounter++;
+  return `images/${d.getFullYear()}/${stamp}-${uploadCounter}-${rand}-${base}${ext}`;
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function uploadImage(file) {
+  const c = getCfg();
+  if (!c.owner || !c.repo || !c.token) {
+    setStatus('upStatus', '请先在下面填好并保存设置。', 'err');
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    setStatus('upStatus', '这不是图片文件。', 'err');
+    return;
+  }
+  const path = makePath(file.name || 'paste.png');
+  setStatus('upStatus', `上传中：${file.name || '图片'}（${(file.size/1024).toFixed(0)} KB）…`, '');
+  try {
+    const content = await fileToBase64(file);
+    const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${encodeURI(path)}`, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + c.token, 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify({ message: 'upload ' + path, content, branch: c.branch })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({}));
+      throw new Error(err.message || ('HTTP ' + r.status));
+    }
+    const links = {
+      jsdelivr: `https://cdn.jsdelivr.net/gh/${c.owner}/${c.repo}@${c.branch}/${path}`,
+      statically: `https://cdn.statically.io/gh/${c.owner}/${c.repo}/${c.branch}/${path}`,
+      raw: `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${path}`,
+    };
+    setStatus('upStatus', '上传成功 · 点「复制」即可粘到你的 App。', 'ok');
+    showResult(file, links);
+    addHistory(links.jsdelivr);
+  } catch(e) {
+    setStatus('upStatus', '上传失败：' + e.message, 'err');
+  }
+}
+
+function showResult(file, links) {
+  const box = $('result');
+  const url = URL.createObjectURL(file);
+  box.innerHTML = `
+    <img class="thumb" src="${url}">
+    ${linkRow('推荐直链（jsDelivr CDN）', links.jsdelivr)}
+    ${linkRow('备用直链（Statically，国内更稳）', links.statically)}
+    ${linkRow('原始链接（GitHub raw）', links.raw)}
+  `;
+  box.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.onclick = () => copyText(btn.getAttribute('data-copy'), btn);
+  });
+}
+function linkRow(name, link) {
+  return `<div class="result-item">
+    <div class="lname">${name}</div>
+    <div class="copybox">
+      <input type="text" readonly value="${link}" onclick="this.select()">
+      <button data-copy="${link}">复制</button>
+    </div>
+  </div>`;
+}
+function copyText(text, btn) {
+  const done = () => { if (btn) { const o = btn.textContent; btn.textContent = '已复制'; setTimeout(()=>btn.textContent=o, 1200); } };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, cb) {
+  const t = document.createElement('textarea');
+  t.value = text; t.style.position='fixed'; t.style.opacity='0';
+  document.body.appendChild(t); t.focus(); t.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(t); if (cb) cb();
+}
+
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch(e){ return []; } }
+function addHistory(link) {
+  const h = loadHistory();
+  h.unshift({ link, t: new Date().toLocaleString('zh-CN') });
+  localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 50)));
+  renderHistory();
+}
+function renderHistory() {
+  const h = loadHistory();
+  const box = $('history');
+  if (!h.length) { box.innerHTML = '<div class="empty">还没有上传过作品。</div>'; return; }
+  box.innerHTML = h.map(item => `
+    <div class="history-item">
+      <img src="${item.link}" onerror="this.style.opacity=.2">
+      <div class="h-link" title="${item.link}">${item.link}</div>
+      <button class="ghost" data-copy="${item.link}">复制</button>
+    </div>`).join('');
+  box.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.onclick = () => copyText(btn.getAttribute('data-copy'), btn);
+  });
+}
+
+// 相册选择 / 拍照 / 拖拽 / 粘贴
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+$('camera').onclick = () => $('camfile').click();
+$('file').onchange = e => { for (const f of e.target.files) uploadImage(f); e.target.value=''; };
+$('camfile').onchange = e => { for (const f of e.target.files) uploadImage(f); e.target.value=''; };
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hover'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hover'); }));
+drop.addEventListener('drop', e => { for (const f of e.dataTransfer.files) uploadImage(f); });
+window.addEventListener('paste', e => {
+  if (!e.clipboardData) return;
+  for (const item of e.clipboardData.items) {
+    if (item.type.startsWith('image/')) uploadImage(item.getAsFile());
+  }
+});
+
+loadCfg();
+renderHistory();
+</script>
+</body>
+</html>
